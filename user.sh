@@ -72,6 +72,7 @@ add_user() {
         exit 1
     fi
     eval "echo \"$(cat "${template_file}")\"" > $userdir/client.conf
+    qrencode -t ansiutf8  < $userdir/client.conf
     qrencode -o $userdir/$user.png  < $userdir/client.conf
 
     # change wg config
