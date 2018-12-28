@@ -1,6 +1,11 @@
 This is a simple wireguard VPN user management script using on VPN server.
 Client config file and qrcode are generated.
 
+**This is a part of project:
+
+https://github.com/adrianmihalko/raspberrypiwireguard
+
+
 ### dependency
 
 * wireguard
@@ -36,6 +41,14 @@ and add alice to the wg config.
 ./user.sh -d alice
 ```
 This will delete the alice directory and delete alice from the wg config.
+
+#### view a user
+
+```bash
+./user.sh -v alice
+```
+This will show generated QR codes.
+
 
 #### clear all
 
