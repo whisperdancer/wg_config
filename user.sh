@@ -155,8 +155,21 @@ do_user() {
     generate_and_install_server_config_file
 }
 
+view_user() {
+    local user=$1
+    local userdir="users/$user"
+
+    echo "Client configuration ($(cat $userdir/client.conf | grep AllowedIPs))"
+    qrencode -t ansiutf8  < $userdir/client.conf
+    echo "--------------------------------------------"
+    echo "--------------------------------------------"
+    echo "--------------------------------------------"
+    echo "Client configuration (AllowedIPs: 0.0.0.0/0)"
+    qrencode -t ansiutf8  < $userdir/client.all.conf
+}
+
 usage() {
-    echo "usage: $0 [-a|-d|-c|-g] [username]"
+    echo "usage: $0 [-a|-d|-c|-g][-v] [username]"
 }
 
 # main
@@ -170,6 +183,8 @@ user=$2
 
 if [[ $action == "-c" ]]; then
     do_clear
+elif [[ $action == "-v" ]]; then
+    view_user $user   
 elif [[ $action == "-g" ]]; then
     generate_cidr_ip_file_if
 elif [[ ! -z "$user" && ( $action == "-a" || $action == "-d" ) ]]; then
