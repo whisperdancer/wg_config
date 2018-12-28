@@ -1,7 +1,7 @@
 This is a simple wireguard VPN user management script using on VPN server.
 Client config file and qrcode are generated.
 
-**This is a part of project:
+**This is a part of project:**
 
 https://github.com/adrianmihalko/raspberrypiwireguard
 
