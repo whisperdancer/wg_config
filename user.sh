@@ -169,7 +169,14 @@ view_user() {
 }
 
 usage() {
-    echo "usage: $0 [-a|-d|-c|-g][-v] [username]"
+    echo "usage: $0 [-a|-d|-c|-v] [username]"
+    echo
+    echo "       -a [username]                              add user"
+    echo "       -d [username]                           delete user"
+    echo "       -c               delete all users and configuration"
+    echo "       -v [username]      view generated QR codes for user"
+    echo
+
 }
 
 # main
@@ -182,7 +189,13 @@ action=$1
 user=$2
 
 if [[ $action == "-c" ]]; then
-    do_clear
+    read -r -p "Deleting all users and config. Are you sure? [y/N] " response
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+    then
+        do_clear
+    else
+        echo "Exiting."
+    fi
 elif [[ $action == "-v" ]]; then
     view_user $user   
 elif [[ $action == "-g" ]]; then
