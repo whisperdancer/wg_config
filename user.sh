@@ -129,6 +129,8 @@ del_user() {
         echo "$ip" >> ${AVAILABLE_IP_FILE}
     fi
     rm -rf $userdir
+    
+    sort ${AVAILABLE_IP_FILE} --version-sort -o ${AVAILABLE_IP_FILE}
 }
 
 generate_and_install_server_config_file() {
