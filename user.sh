@@ -61,37 +61,53 @@ add_user() {
     local interface=${_INTERFACE}
     local userdir="users/$user"
 
-    mkdir -p "$userdir"
-    wg genkey | tee $userdir/privatekey | wg pubkey > $userdir/publickey
+    if [ ! -d "$userdir" ]
+    then
 
-    # client config file
-    _PRIVATE_KEY=`cat $userdir/privatekey`
-    _VPN_IP=$(get_vpn_ip)
-    if [[ -z $_VPN_IP ]]; then
-        echo "no available ip"
-        exit 1
+     mkdir -p "$userdir"
+     wg genkey | tee $userdir/privatekey | wg pubkey > $userdir/publickey
+
+     # client config file
+     _PRIVATE_KEY=`cat $userdir/privatekey`
+     _VPN_IP=$(get_vpn_ip)
+     if [[ -z $_VPN_IP ]]; then
+         echo "no available ip"
+         exit 1
+     fi
+     eval "echo \"$(cat "${template_file}")\"" > $userdir/client.conf
+     
+     eval "echo \"$(cat "${template_file}")\"" > $userdir/client.all.conf
+     sed -r "s/AllowedIPs.*/AllowedIPs = 0.0.0.0\/0/g" -i $userdir/client.all.conf
+     
+     qrencode -t ansiutf8  < $userdir/client.conf
+     qrencode -o $userdir/$user.png  < $userdir/client.conf
+
+     qrencode -o $userdir/$user.all.png  < $userdir/client.all.conf
+     
+     # change wg config
+     local ip=${_VPN_IP%/*}/32
+     local public_key=`cat $userdir/publickey`
+     wg set $interface peer $public_key allowed-ips $ip
+     if [[ $? -ne 0 ]]; then
+       echo "wg set failed"
+       rm -rf $user
+       exit 1
+     fi
+
+     echo "$user $_VPN_IP $public_key" >> ${SAVED_FILE}
+    
+    else
+     echo "$user already exists." 1>&2
+     echo
+     read -r -p "Overwrite current user? [y/N]" response
+     if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+     then
+        del_user $user
+        add_user $user
+     else
+        echo "Exiting."
+     fi
     fi
-    eval "echo \"$(cat "${template_file}")\"" > $userdir/client.conf
-    
-    eval "echo \"$(cat "${template_file}")\"" > $userdir/client.all.conf
-    sed -r "s/AllowedIPs.*/AllowedIPs = 0.0.0.0\/0/g" -i $userdir/client.all.conf
-    
-    qrencode -t ansiutf8  < $userdir/client.conf
-    qrencode -o $userdir/$user.png  < $userdir/client.conf
-
-    qrencode -o $userdir/$user.all.png  < $userdir/client.all.conf
-    
-    # change wg config
-    local ip=${_VPN_IP%/*}/32
-    local public_key=`cat $userdir/publickey`
-    wg set $interface peer $public_key allowed-ips $ip
-    if [[ $? -ne 0 ]]; then
-      echo "wg set failed"
-      rm -rf $user
-      exit 1
-    fi
-
-    echo "$user $_VPN_IP $public_key" >> ${SAVED_FILE}
 }
 
 del_user() {
@@ -160,11 +176,23 @@ view_user() {
     local userdir="users/$user"
 
     echo "Client configuration ($(cat $userdir/client.conf | grep AllowedIPs))"
+    echo "client.conf:"
+    echo
+    cat $userdir/client.conf
+    echo
     qrencode -t ansiutf8  < $userdir/client.conf
-    echo "--------------------------------------------"
-    echo "--------------------------------------------"
-    echo "--------------------------------------------"
+    echo
+    echo
+    echo "----------------------------------------------------------------"
+    echo "----------------------------------------------------------------"
+    echo "----------------------------------------------------------------"
+    echo
+    echo
     echo "Client configuration (AllowedIPs: 0.0.0.0/0)"
+    echo "client.all.conf:"
+    echo
+    cat $userdir/client.all.conf
+    echo
     qrencode -t ansiutf8  < $userdir/client.all.conf
 }
 
