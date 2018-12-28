@@ -72,9 +72,15 @@ add_user() {
         exit 1
     fi
     eval "echo \"$(cat "${template_file}")\"" > $userdir/client.conf
+    
+    eval "echo \"$(cat "${template_file}")\"" > $userdir/client.all.conf
+    sed -r "s/AllowedIPs.*/AllowedIPs = 0.0.0.0\/0/g" -i $userdir/client.all.conf
+    
     qrencode -t ansiutf8  < $userdir/client.conf
     qrencode -o $userdir/$user.png  < $userdir/client.conf
 
+    qrencode -o $userdir/$user.all.png  < $userdir/client.all.conf
+    
     # change wg config
     local ip=${_VPN_IP%/*}/32
     local public_key=`cat $userdir/publickey`
