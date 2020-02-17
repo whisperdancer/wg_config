@@ -1,3 +1,5 @@
+Added support for client DNS and preshared keys
+
 **This is a part of project:**
 
 https://github.com/adrianmihalko/raspberrypiwireguard
