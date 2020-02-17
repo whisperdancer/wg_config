@@ -66,9 +66,11 @@ add_user() {
 
      mkdir -p "$userdir"
      wg genkey | tee $userdir/privatekey | wg pubkey > $userdir/publickey
+     wg genpsk > $userdir/presharedkey
 
      # client config file
      _PRIVATE_KEY=`cat $userdir/privatekey`
+     _PRE_SHARED_KEY=`cat $userdir/presharedkey`
      _VPN_IP=$(get_vpn_ip)
      if [[ -z $_VPN_IP ]]; then
          echo "no available ip"
@@ -81,20 +83,20 @@ add_user() {
      
      qrencode -t ansiutf8  < $userdir/client.conf
      qrencode -o $userdir/$user.png  < $userdir/client.conf
-
      qrencode -o $userdir/$user.all.png  < $userdir/client.all.conf
      
      # change wg config
      local ip=${_VPN_IP%/*}/32
      local public_key=`cat $userdir/publickey`
-     wg set $interface peer $public_key allowed-ips $ip
+     local pre_shared_key=$_PRE_SHARED_KEY
+     wg set $interface peer $public_key preshared-key $userdir/presharedkey allowed-ips $ip 
      if [[ $? -ne 0 ]]; then
        echo "wg set failed"
        rm -rf $user
        exit 1
      fi
 
-     echo "$user $_VPN_IP $public_key" >> ${SAVED_FILE}
+     echo "$user $_VPN_IP $public_key $pre_shared_key" >> ${SAVED_FILE}
     
     else
      echo "$user already exists." 1>&2
@@ -139,12 +141,14 @@ generate_and_install_server_config_file() {
 
     # server config file
     eval "echo \"$(cat "${template_file}")\"" > $WG_TMP_CONF_FILE
-    while read user vpn_ip public_key; do
+    while read user vpn_ip public_key pre_shared_key; do
       ip=${vpn_ip%/*}/32
       cat >> $WG_TMP_CONF_FILE <<EOF
+# $user
 [Peer]
 PublicKey = $public_key
 AllowedIPs = $ip
+PresharedKey = $pre_shared_key
 EOF
     done < ${SAVED_FILE}
     \cp -f $WG_TMP_CONF_FILE $WG_CONF_FILE
