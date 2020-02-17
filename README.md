@@ -1,4 +1,4 @@
-Added support for client DNS and preshared keys
+* Added support for client DNS and preshared keys
 
 **This is a part of project:**
 
