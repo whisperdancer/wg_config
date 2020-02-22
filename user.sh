@@ -66,7 +66,7 @@ add_user() {
 
      mkdir -p "$userdir"
      wg genkey | tee $userdir/privatekey | wg pubkey > $userdir/publickey
-     wg genpsk > $userdir/presharedkey
+     wg genpsk > $userdir/presharedkey 2>/dev/null
 
      # client config file
      _PRIVATE_KEY=`cat $userdir/privatekey`
