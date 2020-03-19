@@ -77,6 +77,8 @@ add_user() {
          exit 1
      fi
      eval "echo \"$(cat "${template_file}")\"" > $userdir/client.conf
+     # remove DNS line for client.conf only
+     sed "/DNS/d" -i $userdir/client.conf
      
      eval "echo \"$(cat "${template_file}")\"" > $userdir/client.all.conf
      sed -r "s/AllowedIPs.*/AllowedIPs = 0.0.0.0\/0/g" -i $userdir/client.all.conf
