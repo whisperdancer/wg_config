@@ -65,12 +65,29 @@ add_user() {
     then
 
      mkdir -p "$userdir"
-     wg genkey | tee $userdir/privatekey | wg pubkey > $userdir/publickey
-     wg genpsk > $userdir/presharedkey 2>/dev/null
+
+     read -p "Use existing private and public key? Y/N [N]: " use_existing_keys
+     use_existing_keys=${use_existing_keys:-N}
+     if [[ ${use_existing_keys,,} != 'n' ]]; then
+         read -p "Private key: " _private_key
+         read -p "Public key: " _public_key
+         echo $_private_key > $userdir/privatekey
+         echo $_public_key > $userdir/publickey
+     else
+         wg genkey | tee $userdir/privatekey | wg pubkey > $userdir/publickey
+     fi
+
+     read -p "Add a preshared key for this client? Y/N [Y]: " use_psk
+     use_psk=${use_psk:-Y}
+     if [[ ${use_psk,,} != 'n' ]]; then
+         wg genpsk > $userdir/presharedkey
+     else
+         rm -f $userdir/presharedkey
+     fi
 
      # client config file
      _PRIVATE_KEY=`cat $userdir/privatekey`
-     _PRE_SHARED_KEY=`cat $userdir/presharedkey`
+     _PRE_SHARED_KEY=$([ -f $userdir/presharedkey ] && cat $userdir/presharedkey || echo "")
      _VPN_IP=$(get_vpn_ip)
      if [[ -z $_VPN_IP ]]; then
          echo "no available ip"
@@ -82,6 +99,12 @@ add_user() {
      
      eval "echo \"$(cat "${template_file}")\"" > $userdir/client.all.conf
      sed -r "s/AllowedIPs.*/AllowedIPs = 0.0.0.0\/0/g" -i $userdir/client.all.conf
+
+     # remove PresharedKey line if no preshared key was generated
+     if [[ ! -f $userdir/presharedkey ]]; then
+         sed "/^PresharedKey/d" -i $userdir/client.conf
+         sed "/^PresharedKey/d" -i $userdir/client.all.conf
+     fi
      
      qrencode -t ansiutf8  < $userdir/client.conf
      qrencode -o $userdir/$user.png  < $userdir/client.conf
@@ -91,7 +114,11 @@ add_user() {
      local ip=${_VPN_IP%/*}/32
      local public_key=`cat $userdir/publickey`
      local pre_shared_key=$_PRE_SHARED_KEY
-     wg set $interface peer $public_key preshared-key $userdir/presharedkey allowed-ips $ip 
+     if [[ -f $userdir/presharedkey ]]; then
+         wg set $interface peer $public_key preshared-key $userdir/presharedkey allowed-ips $ip
+     else
+         wg set $interface peer $public_key allowed-ips $ip
+     fi
      if [[ $? -ne 0 ]]; then
        echo "wg set failed"
        rm -rf $user
