@@ -3,9 +3,6 @@
 read -p "Enter the wireguard interface [wg0]: " wg_interface
 wg_interface=${wg_interface:-wg0}
 
-read -p "Enter the primary interface [eth0]: " primary_interface
-primary_interface=${primary_interface:-eth0}
-
 read -p "Enter the wireguard port number [51820]: " port_number
 port_number=${port_number:-51820}
 
@@ -31,7 +28,6 @@ fi
 
 cat <<EOF > wg.def
 _INTERFACE=${wg_interface}
-_PRIMARY_INTERFACE=${primary_interface}
 _VPN_NET=${ip_range}
 _SERVER_PORT=${port_number}
 _SERVER_LISTEN=${server_address}:\$_SERVER_PORT
