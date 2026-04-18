@@ -55,6 +55,40 @@ get_vpn_ip() {
     echo "$ip"
 }
 
+select_vpn_ip() {
+    local ips=()
+    local i=1
+
+    while IFS= read -r line; do
+        ips+=("$line")
+    done < "$AVAILABLE_IP_FILE"
+
+    if [[ ${#ips[@]} -eq 0 ]]; then
+        echo "no available ip" >&2
+        exit 1
+    fi
+
+    echo "Available IPs:" >&2
+    for ip in "${ips[@]}"; do
+        printf "  %d) %s\n" "$i" "$ip" >&2
+        ((i++))
+    done
+
+    local choice
+    while true; do
+        read -p "Select IP number [1-$((i-1))]: " choice
+        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#ips[@]} )); then
+            break
+        fi
+        echo "Invalid selection, please enter a number between 1 and ${#ips[@]}" >&2
+    done
+
+    local selected_ip="${ips[$((choice-1))]}"
+    local mat="${selected_ip/\//\\\/}"
+    sed -i "/^$mat$/d" "$AVAILABLE_IP_FILE"
+    echo "$selected_ip"
+}
+
 add_user() {
     local user=$1
     local template_file=${CLIENT_TPL_FILE}
@@ -88,10 +122,16 @@ add_user() {
      # client config file
      _PRIVATE_KEY=`cat $userdir/privatekey`
      _PRE_SHARED_KEY=$([ -f $userdir/presharedkey ] && cat $userdir/presharedkey || echo "")
-     _VPN_IP=$(get_vpn_ip)
-     if [[ -z $_VPN_IP ]]; then
-         echo "no available ip"
-         exit 1
+     read -p "Select IP from list? Y/N [N]: " select_ip
+     select_ip=${select_ip:-N}
+     if [[ ${select_ip,,} != 'n' ]]; then
+         _VPN_IP=$(select_vpn_ip)
+     else
+         _VPN_IP=$(get_vpn_ip)
+         if [[ -z $_VPN_IP ]]; then
+             echo "no available ip"
+             exit 1
+         fi
      fi
      eval "echo \"$(cat "${template_file}")\"" > $userdir/client.conf
      # remove DNS line for client.conf only
